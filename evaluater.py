@@ -1,157 +1,94 @@
-### VALUES ###
+from board import Board
+
+# PARAMETERS:
 THE_MAX = 999_999_999_999_999
 
+# Multipliers
 PIECE_EVAL_MULTIPLIER = 1
-CHECK_EVAL_MULTIPLIER = 0.5
+
 PROTECTED_TILE_EVAL_MULTIPLIER = 0.05
-ENEMY_PROTECTED_TILE_EVAL_MULTIPLIER = -0.05
-HANGING_PIECE_EVAL_MULTIPLIER = -0.75
-ENEMY_HANGING_PIECE_EVAL_MULTIPLIER = 0.25
+ENEMY_PROTECTED_TILE_EVAL_MULTIPLIER = -0.02
 
-### MODULES ###
-from board import Board, piece_types
+HANGING_PIECES_EVAL_MULTIPLIER = -0.75
+ENEMY_HANGING_PIECES_EVAL_MULTIPLIER = 0.25
 
-### FUNCTIONS ###
-def evaluate_pieces(board: Board, color: bool):
-    your_points = 0
-    opponent_points = 0
-    pieces = board.get_pieces(filter=None)
+TRADE_MULTIPLIER = 0.75
 
-    for piece in pieces:
-        if pieces[piece]["color"] != color:
-            opponent_points += piece_types[pieces[piece]["type"]]["points"]
-        else:
-            your_points += piece_types[pieces[piece]["type"]]["points"]
-    
-    return your_points, opponent_points
+# Static Points
+WIN_POINTS = THE_MAX
+LOSE_POINTS = -THE_MAX
+DRAW_POINTS = 0.05
+BENEFICIAL_DRAW_POINTS = DRAW_POINTS # TODO
+# DRAW_POINTS if input("Is Draw Beneficiable? (y/n):").lower() == "y" else -DRAW_POINTS
 
-def evaluate_hanging_pieces(board: Board, color):
-    points = 0
-    opponent_pieces = board.get_pieces(not color)
-    # print("Opponent Pieces:", opponent_pieces)
-    for piece in opponent_pieces:
-        moves = board.list_moves(piece, not color)
-        # print("moves:", moves)
-        for move in moves:
-            the_move = f"{piece}-{move}"
-            splitted = the_move.split("-")
-            # outgoing = "-".join(splitted[1:])
-            attack_pos = splitted[1]
-            if len(splitted) > 2:
-                if splitted[2] == "ep":
-                    _from = splitted[0]
-                    _to = splitted[1]
-                    letter_of_to = _to[0]
-                    number_of_from = _from[1]
-                    attack_pos = f"{letter_of_to}{number_of_from}"
-            # Attacked Piece
-            attacked_piece = board.get_piece(attack_pos)
-            if attacked_piece == None: continue
-            points += piece_types[attacked_piece["type"]]["points"]
-            
-    return points
+CHECK_POINTS = 0.4
 
-def list_protected_tiles(board: Board, pos, turn: bool):
-    letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-    piece = board.pieces.get(pos)
-    if not piece: return []
-    
-    piece_type = piece["type"]
-    piece_color = piece["color"]
 
-    if turn is not None and piece_color != turn: return []
-
-    pos_in_xy = (letters.index(pos[0]), int(pos[1]) - 1)
-
-    if piece_type not in piece_types: return []
-
-    moves = []
-    
-    move_types = board.get_move_types(piece_type, piece_color, pos_in_xy)
-
-    for move_type in move_types:
-        if move_type["type"] == "castle":
-            pass # Castle can't be a threat
-        elif move_type["type"] == "direction":
-            multiplier = 1 if piece_color else -1
-            x = pos_in_xy[0] # x
-            y = pos_in_xy[1] # y
-            while True:
-                x += move_type["x"] * multiplier
-                y += move_type["y"] * multiplier
-                if x < 0 or x > 7 or y < 0 or y > 7: break
-                piece = board.get_piece(f"{letters[x]}{y + 1}")
-                if piece:
-                    if piece["color"] != piece_color:
-                        moves.append(f"{letters[x]}{y + 1}")
-                    break
-                else:
-                    moves.append(f"{letters[x]}{y + 1}")
-        elif move_type["type"] == "position":
-            x = pos_in_xy[0] + move_type["x"] * (1 if piece_color else -1) # new x
-            y = pos_in_xy[1] + move_type["y"] * (1 if piece_color else -1) # new y
-            if x < 0 or x > 7 or y < 0 or y > 7: continue # outside of board
-
-            if "en_passant" in move_type:
-                moves.append(f"{letters[x]}{y + 1}-ep")
-            elif "promotion" in move_type:
-                piece = board.get_piece(f"{letters[x]}{y + 1}")
-                if move_type["capture"]:
-                    if piece != None:
-                        if piece["color"] != piece_color:
-                            moves.append(f"{letters[x]}{y + 1}-{move_type['promotion']}")
-                            # moves.append(f"{letters[x]}{y + 1}")
-                elif move_type["move"]:
-                    pass # Can't be a threat
-                else:
-                    print("wtf? x2") 
-            else:
-                piece = board.get_piece(f"{letters[x]}{y + 1}")
-                if move_type["move"] and move_type["capture"]:
-                    if piece != None:
-                        if piece["color"] != piece_color:
-                            moves.append(f"{letters[x]}{y + 1}")
-                    else:
-                        moves.append(f"{letters[x]}{y + 1}")
-                elif move_type["move"]:
-                    pass # Can't be a threat
-                elif move_type["capture"]:
-                    if piece != None:
-                        if piece["color"] != piece_color:
-                            moves.append(f"{letters[x]}{y + 1}")
-                else:
-                    print("wtf?")
-    # print("moves:", moves)
-    return moves
-
+PIECE_POINTS = { "p": 1, "n": 3, "b": 3, "r": 5, "q": 9, "k": 0 }
 
 def evaluate_board(board: Board, color):
-    # is checkmate for the turn color
-    if board.is_checkmate(color): # is color checkmated
-        return -THE_MAX
-    elif board.is_checkmate(not color): # is opponent checkmated
-        return THE_MAX
+    if board.is_in_checkmate(not color):
+        return WIN_POINTS
+
+    if len(board.get_all_possible_moves(not color, only_captures=False, add_where_from=True, exclude_checks=True)) == 0:
+        return BENEFICIAL_DRAW_POINTS # Stalemate
+
     evaluation = 0
 
-    all_protects = []
-    for piece in board.pieces:
-        if board.pieces[piece]["color"] == color:
-            all_protects += list_protected_tiles(board, piece, color)
+    # Points
+    evaluation += calculate_points(board, color) * PIECE_EVAL_MULTIPLIER
+    # Protected Tiles
+    evaluation += calculate_protected_tiles(board, color, exclude_checks=False) * PROTECTED_TILE_EVAL_MULTIPLIER # Can't exclude checks here because it would need a simulation although it is not its turn
+    evaluation += calculate_protected_tiles(board, not color, exclude_checks=True) * ENEMY_PROTECTED_TILE_EVAL_MULTIPLIER
+    # Hanging Pieces
+    evaluation += calculate_hanging_pieces(board, color) * HANGING_PIECES_EVAL_MULTIPLIER
+    evaluation += calculate_hanging_pieces(board, not color) * ENEMY_HANGING_PIECES_EVAL_MULTIPLIER
+    # Trades
+    evaluation += calculate_trades(board, color) * TRADE_MULTIPLIER
+
+    # Static Controls
+    if board.is_in_check(color):
+        evaluation += CHECK_POINTS
     
-    all_enemy_protects = []
-    for piece in board.pieces:
-        if board.pieces[piece]["color"] != color:
-            all_enemy_protects += list_protected_tiles(board, piece, not color)
-
-    your_points, opponent_points = evaluate_pieces(board, color)
-    evaluation += (your_points - opponent_points) * PIECE_EVAL_MULTIPLIER
-
-    evaluation += (1 if board.is_check(not color) else 0) * CHECK_EVAL_MULTIPLIER
-
-    evaluation += evaluate_hanging_pieces(board, color) * HANGING_PIECE_EVAL_MULTIPLIER
-    evaluation += len(all_protects) * PROTECTED_TILE_EVAL_MULTIPLIER
-
-    evaluation += evaluate_hanging_pieces(board, not color) * ENEMY_HANGING_PIECE_EVAL_MULTIPLIER
-    evaluation += len(all_enemy_protects) * ENEMY_PROTECTED_TILE_EVAL_MULTIPLIER
-
     return evaluation
+
+    
+
+
+def calculate_points(board: Board, color: bool):
+    pieces = board.get_pieces(color)
+    enemy_pieces = board.get_pieces(not color)
+    points = 0
+
+    for piece in pieces:
+        _piece = board.get_piece(piece)
+        points += PIECE_POINTS[_piece["type"]]
+    
+    for piece in enemy_pieces:
+        _piece = board.get_piece(piece)
+        points -= PIECE_POINTS[_piece["type"]]
+
+    return points
+
+def calculate_protected_tiles(board: Board, color: bool, exclude_checks=False):
+    every_protected_tile_repeating = board.get_all_possible_moves(color, only_captures=True, add_where_from=False, exclude_checks=exclude_checks)
+    actual_tiles = [] # not repeating
+    for tile in every_protected_tile_repeating:
+        if board.get_piece(tile) == None:
+            formatted_tile = tile[0:2]
+            if formatted_tile not in actual_tiles:
+                actual_tiles.append(formatted_tile)
+    return len(actual_tiles)
+
+def calculate_hanging_pieces(board: Board, color: bool):
+    all_pieces = board.get_pieces(color)
+
+    points = 0
+    for piece in all_pieces:
+        if board.is_in_danger(piece, color):
+            points += PIECE_POINTS[board.get_piece(piece)["type"]]
+    
+    return points
+
+def calculate_trades(board: Board, color: bool):
+    pass

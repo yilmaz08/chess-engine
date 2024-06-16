@@ -1,490 +1,465 @@
-default_pieces = {
-    # White Others
-    "a1": {"color": True, "type": "r"},
-    "b1": {"color": True, "type": "n"},
-    "c1": {"color": True, "type": "b"},
-    "d1": {"color": True, "type": "q"},
-    "e1": {"color": True, "type": "k"},
-    "f1": {"color": True, "type": "b"},
-    "g1": {"color": True, "type": "n"},
-    "h1": {"color": True, "type": "r"},
-    # White Pawns
-    "a2": {"color": True, "type": "p"},
-    "b2": {"color": True, "type": "p"},
-    "c2": {"color": True, "type": "p"},
-    "d2": {"color": True, "type": "p"},
-    "e2": {"color": True, "type": "p"},
-    "f2": {"color": True, "type": "p"},
-    "g2": {"color": True, "type": "p"},
-    "h2": {"color": True, "type": "p"},
-    # Black Others
-    "a8": {"color": False, "type": "r"},
-    "b8": {"color": False, "type": "n"},
-    "c8": {"color": False, "type": "b"},
-    "d8": {"color": False, "type": "q"},
-    "e8": {"color": False, "type": "k"},
-    "f8": {"color": False, "type": "b"},
-    "g8": {"color": False, "type": "n"},
-    "h8": {"color": False, "type": "r"},
-    # Black Pawns
-    "a7": {"color": False, "type": "p"},
-    "b7": {"color": False, "type": "p"},
-    "c7": {"color": False, "type": "p"},
-    "d7": {"color": False, "type": "p"},
-    "e7": {"color": False, "type": "p"},
-    "f7": {"color": False, "type": "p"},
-    "g7": {"color": False, "type": "p"},
-    "h7": {"color": False, "type": "p"},
+import copy
+
+DEFAULT_BOARD = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+
+RANKS = {
+    True: {"promotion": 7, "2-move": 1},
+    False: {"promotion": 0, "2-move": 6}
 }
+PROMOTE_TO = ["q", "r", "b", "n"]
 
-piece_types = {
-    "r": {
-        "name": "Rook",
-        "points": 5,
-        "move": [
-            {"type": "direction", "x": 1, "y": 0, "capture": True, "move": True},
-            {"type": "direction", "x": -1, "y": 0, "capture": True, "move": True},
-            {"type": "direction", "x": 0, "y": 1, "capture": True, "move": True},
-            {"type": "direction", "x": 0, "y": -1, "capture": True, "move": True},
-        ]
-    },
-    "b": {
-        "name": "Bishop",
-        "points": 3,
-        "move": [
-            {"type": "direction", "x": 1, "y": 1, "capture": True, "move": True},
-            {"type": "direction", "x": -1, "y": 1, "capture": True, "move": True},
-            {"type": "direction", "x": 1, "y": -1, "capture": True, "move": True},
-            {"type": "direction", "x": -1, "y": -1, "capture": True, "move": True},
-        ]
-    },
-    "n": {
-        "name": "Knight",
-        "points": 3,
-        "move": [
-            {"type": "position", "x": 1, "y": 2, "capture": True, "move": True},
-            {"type": "position", "x": -1, "y": 2, "capture": True, "move": True},
+HORSEY_MOVES = [(2, 1),(2, -1),(-2, 1),(-2, -1),(1, 2),(-1, 2),(1, -2),(-1, -2)]
+KING_MOVES = [(1, 1),(1, -1),(-1, 1),(-1, -1),(0, 1),(0, -1),(1, 0),(-1, 0)]
 
-            {"type": "position", "x": 1, "y": -2, "capture": True, "move": True},
-            {"type": "position", "x": -1, "y": -2, "capture": True, "move": True},
-
-            {"type": "position", "x": -2, "y": -1, "capture": True, "move": True},
-            {"type": "position", "x": -2, "y": 1, "capture": True, "move": True},
-
-            {"type": "position", "x": 2, "y": -1, "capture": True, "move": True},
-            {"type": "position", "x": 2, "y": 1, "capture": True, "move": True}
-        ]
-    },
-    "q": {
-        "name": "Queen",
-        "points": 9,
-        "move": [
-            {"type": "direction", "x": 1, "y": 0, "capture": True, "move": True},
-            {"type": "direction", "x": -1, "y": 0, "capture": True, "move": True},
-            {"type": "direction", "x": 0, "y": 1, "capture": True, "move": True},
-            {"type": "direction", "x": 0, "y": -1, "capture": True, "move": True},
-            {"type": "direction", "x": 1, "y": 1, "capture": True, "move": True},
-            {"type": "direction", "x": -1, "y": 1, "capture": True, "move": True},
-            {"type": "direction", "x": 1, "y": -1, "capture": True, "move": True},
-            {"type": "direction", "x": -1, "y": -1, "capture": True, "move": True},
-        ]
-    },
-    "k": {
-        "name": "King",
-        "points": 0,
-        "move": [
-            {"type": "position", "x": 1, "y": 0, "capture": True, "move": True},
-            {"type": "position", "x": -1, "y": 0, "capture": True, "move": True},
-            {"type": "position", "x": 0, "y": 1, "capture": True, "move": True},
-            {"type": "position", "x": 0, "y": -1, "capture": True, "move": True},
-            {"type": "position", "x": 1, "y": 1, "capture": True, "move": True},
-            {"type": "position", "x": -1, "y": 1, "capture": True, "move": True},
-            {"type": "position", "x": 1, "y": -1, "capture": True, "move": True},
-            {"type": "position", "x": -1, "y": -1, "capture": True, "move": True},
-        ]
-    },
-    "p": {
-        "name": "Pawn",
-        "points": 1,
-        "move": [
-            {"type": "position", "x": 0, "y": 1, "capture": False, "move": True},
-            {"type": "position", "x": 1, "y": 1, "capture": True, "move": False},
-            {"type": "position", "x": -1, "y": 1, "capture": True, "move": False}
-        ]
-    }
-}
+LETTERS = "abcdefgh"
+NUMBERS = "12345678"
+REVERSED_NUMBERS = "87654321"
 
 class Board:
-    # True is white, False is black
-    whiteOO = True
-    blackOO = True
-    whiteOOO = True
-    blackOOO = True
-
-    turn = True
     pieces = {}
-    history = []
+    turn = True # True: White, False: Black
+    # Castling
+    whiteOO, whiteOOO, blackOO, blackOOO = False, False, False, False
+    # En Passant
+    en_passant_pos = None
+    # Halfmove Clock
+    halfmove_clock = 0
+    # Fullmove Number
+    fullmove_number = 1
+
+    def __init__(self, fen_code: str = DEFAULT_BOARD):
+        self.pieces, self.turn, self.whiteOO, self.whiteOOO, self.blackOO, self.blackOOO, self.en_passant_pos, self.halfmove_clock, self.fullmove_number = self.import_fen(fen_code)
 
     def __str__(self):
-        return f"Chess Board. Turn: {('White' if self.turn else 'Black')}.\nBlack Castle: {self.blackOO} {self.blackOOO}\nWhite Castle: {self.whiteOO} {self.whiteOOO}\n\n{self.print_board()}"
+        return f"Chess Board. Turn: {('White' if self.turn else 'Black')}.\nEn Passant Pos: {self.en_passant_pos}\nBlack Castle (OO OOO): {self.blackOO} {self.blackOOO}\nWhite Castle (OO OOO): {self.whiteOO} {self.whiteOOO}\n\n{self.draw_board()}"
 
-    def __init__(self, turn: bool = True, pieces: dict = default_pieces, history: list = [], whiteOO: bool = True, blackOO: bool = True, whiteOOO: bool = True, blackOOO: bool = True):
-        self.pieces = pieces
-        self.turn = turn
-        self.history = history
-
-        whiteOO_validity = False
-        if "e1" in pieces and "h1" in pieces:
-            whiteOO_validity = pieces["e1"]["type"] == "k" and pieces["h1"]["type"] == "r"
-
-        blackOO_validity = False
-        if "e8" in pieces and "h8" in pieces:
-            blackOO_validity = pieces["e8"]["type"] == "k" and pieces["h8"]["type"] == "r"
-
-        whiteOOO_validity = False
-        if "e1" in pieces and "a1" in pieces:
-            whiteOOO_validity = self.pieces["e1"]["type"] == "k" and self.pieces["a1"]["type"] == "r"
-
-        blackOOO_validity = False
-        if "e8" in pieces and "a8" in pieces:
-            blackOOO_validity = self.pieces["e8"]["type"] == "k" and self.pieces["a8"]["type"] == "r"
-
-        self.whiteOO = whiteOO and whiteOO_validity
-        self.blackOO = blackOO and blackOO_validity
-        self.whiteOOO = whiteOOO and whiteOOO_validity
-        self.blackOOO = blackOOO and blackOOO_validity
-
-    def move(self, the_move, color: bool = None, willCheck: bool = True):
-        splitted = the_move.split("-")
-        outgoing = "-".join(splitted[1:])
-        piece_type = self.pieces[splitted[0]]["type"]
-
-        if willCheck:
-            if color != self.turn: return "Invalid Move - Not your turn", False
-
-            possible_moves = self.list_moves(splitted[0], self.turn)
-
-            if outgoing not in possible_moves: return "Invalid Move - Not Possible", False
-            
-            simulated_board_check = self.move_simulate(f"{splitted[0]}-{outgoing}", color).is_check(color)
-            if simulated_board_check: return "Invalid Move - Checked", False
-
-
-            print("Move from", splitted[0], "to", outgoing)
-        # else:
-        #     print("Simulated move from", splitted[0], "to", outgoing)
-        # Move the piece
-        if len(splitted) > 2: # Pawn Stuff (EP & Promotion)
-            if splitted[2] == "ep":
-                # En passant
-                _from = splitted[0]
-                _to = splitted[1]
-                print("From:", _from, "To:", _to)
-
-                letter_of_to = _to[0]
-                number_of_from = _from[1]
-
-                en_passanted_pos = f"{letter_of_to}{number_of_from}"
-
-                self.pieces.pop(splitted[0])
-                self.pieces.pop(en_passanted_pos)
-                self.pieces[splitted[1]] = {"color": color, "type": "p"}
-
-                print("OMG! EN PASSANT!")
-                # print("En passant bitch")
-                # exit()
-            else:
-                # Promotion
-                self.pieces.pop(splitted[0])
-                self.pieces[splitted[1]] = {"color": color, "type": splitted[2]}
-        elif outgoing == "OO":
-            number = "1" if color else "8"
-            king_letter = "e"
-            rook_letter = "h"
-
-            king_new_letter = "g"
-            rook_new_letter = "f"
-            
-            # Remove rook and king
-            self.pieces.pop(f"{king_letter}{number}")
-            self.pieces.pop(f"{rook_letter}{number}")
-            # Put the new rook and king
-            self.pieces[f"{king_new_letter}{number}"] = {"color": color, "type": "k"}
-            self.pieces[f"{rook_new_letter}{number}"] = {"color": color, "type": "r"}
-
-            if color:
-                self.whiteOO = False
-                self.whiteOOO = False
-            else:
-                self.blackOO = False
-                self.blackOOO = False
-        elif outgoing == "OOO":
-            number = "1" if color else "8"
-            king_letter = "e"
-            rook_letter = "a"
-            king_new_letter = "c"
-            rook_new_letter = "d"
-
-            # Remove rook and king
-            self.pieces.pop(f"{king_letter}{number}")
-            self.pieces.pop(f"{rook_letter}{number}")
-            # Put the new rook and king
-            self.pieces[f"{king_new_letter}{number}"] = {"color": color, "type": "k"}
-            self.pieces[f"{rook_new_letter}{number}"] = {"color": color, "type": "r"}
-            # Disable Castling
-            if color:
-                self.whiteOO = False
-                self.whiteOOO = False
-            else:
-                self.blackOO = False
-                self.blackOOO = False
-        else:
-            # Disable Castling
-            if piece_type == "k":
-                if color:
-                    self.whiteOO = False
-                    self.whiteOOO = False
-                else:
-                    self.blackOO = False
-                    self.blackOOO = False
-            elif piece_type == "r":
-                if color:
-                    if splitted[0] == "a1":
-                        self.whiteOOO = False
-                    elif splitted[0] == "h1":
-                        self.whiteOO = False
-                else:
-                    if splitted[0] == "a8":
-                        self.blackOOO = False
-                    elif splitted[0] == "h8":
-                        self.blackOO = False
-
-            # Normal Move
-            self.pieces[splitted[1]] = {"color": color, "type": piece_type}
-            self.pieces.pop(splitted[0])
-
-            
-
-        # Add to history
-        self.history.append(f"{piece_type}-{the_move}")
-
-        self.turn = not self.turn # Change turn
-        return "Successful Move", True
-
-    def move_simulate(self, the_move, color):
-        # print("Simulated move from", pos_from, "to", pos_to)
-        # print("Just Before")
-        new_board = Board(self.turn, self.pieces.copy(), self.history.copy())
-        new_board.move(the_move, color, False)
-        # print("Just After")
-        return new_board
-    
-    def print_board(self, bottom_color: bool = True):
-        letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        numbers = ['1', '2', '3', '4', '5', '6', '7', '8']
-        result = ""
-        if bottom_color: numbers.reverse()
-
-        for a in numbers:
-            for letter in letters:
-                piece_pos = f"{letter}{a}"
-                piece = self.pieces.get(piece_pos)
-                if piece:
-                    if piece["color"]:
-                        result += piece["type"].upper()
-                    else:
-                        result += piece["type"]
-                else:
-                    result += "x"
-            result += "\n"
-        return result
-
-    def get_piece(self, pos):
-        return self.pieces.get(pos)
-    
-    def get_move_types(self, piece_type, piece_color, pos_in_xy, without_castle: bool = False):
-        letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        if piece_type == "p":
-            move_types = piece_types[piece_type]["move"].copy()
-            # new_move_types = []
-            x = pos_in_xy[0]
-            y = pos_in_xy[1]
-
-            # 2 steps forward
-            if y == 1 and piece_color and self.get_piece(f"{letters[x]}{y + 2}") == None or y == 6 and not piece_color and self.get_piece(f"{letters[x]}{y}") == None:
-                move_types.append({"type": "position", "x": 0, "y": 2, "capture": False, "move": True})
-            # Promotion
-            elif y == 6 and piece_color or y == 1 and not piece_color:
-                move_types = []
-                possible_promotions = ["q", "r", "b", "n"]
-                for promotion in possible_promotions:
-                    move_types.append({"type": "position", "x": 0, "y": 1, "capture": False, "move": True, "promotion": promotion})
-                    move_types.append({"type": "position", "x": 1, "y": 1, "capture": True, "move": False, "promotion": promotion})
-                    move_types.append({"type": "position", "x": -1, "y": 1, "capture": True, "move": False, "promotion": promotion})
-            # En passant
-            elif (y == 3 and not piece_color) or (y == 4 and piece_color):
-                if len(self.history) > 0:
-                    last_move = self.history[-1]
-                    the_x_change = -1
-
-                    _possible_letters = []
-                    if x > 0: _possible_letters.append(letters[x - 1])
-                    if x < 7: _possible_letters.append(letters[x + 1])
-
-                    for a in _possible_letters:
-                        if last_move == f"p-{a}{y - 2}-{a}{y + 1}" or last_move == f"p-{a}{y + 3}-{a}{y + 1}":
-                            move_types.append({"type": "position", "x": the_x_change, "y": 1, "capture": True, "move": False, "en_passant": f"{a}{y}"})
-                            the_x_change = 1
-            final_move_types = move_types.copy()
-        
-        elif piece_type == "k":
-            # move_types = piece_types[piece_type]["move"]
-            move_types = piece_types[piece_type]["move"].copy()
-            the_OO = self.whiteOO if piece_color else self.blackOO
-            the_OOO = self.whiteOOO if piece_color else self.blackOOO
-
-            if the_OO and not without_castle:
-                if piece_color:
-                    if self.get_piece("f1") == None and self.get_piece("g1") == None:
-                        if not self.is_check(color=self.turn):
-                            move_types.append({"type": "castle", "side": "OO"})
-                else:
-                    if self.get_piece("f8") == None and self.get_piece("g8") == None:
-                        if not self.is_check(color=self.turn):
-                            move_types.append({"type": "castle", "side": "OO"})     
-            if the_OOO and not without_castle:
-                if piece_color:
-                    if self.get_piece("b1") == None and self.get_piece("c1") == None and self.get_piece("d1") == None:
-                        if not self.is_check(color=self.turn):
-                            move_types.append({"type": "castle", "side": "OOO"})
-                else:
-                    if self.get_piece("b8") == None and self.get_piece("c8") == None and self.get_piece("d8") == None:
-                        if not self.is_check(color=self.turn):
-                            move_types.append({"type": "castle", "side": "OOO"})
-            final_move_types = move_types.copy()
-        else:
-            move_types = piece_types[piece_type]["move"]
-            final_move_types = move_types.copy()
-        return final_move_types
-
-    def list_moves(self, pos, turn: bool, without_castle: bool = False):
-        letters = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
-        piece = self.pieces.get(pos)
-        if not piece: return []
-        
-        piece_type = piece["type"]
-        piece_color = piece["color"]
-
-        if turn is not None and piece_color != turn: return []
-
-        pos_in_xy = (letters.index(pos[0]), int(pos[1]) - 1)
-
-        if piece_type not in piece_types: return []
-
-        moves = []
-        
-        move_types = self.get_move_types(piece_type, piece_color, pos_in_xy, without_castle)
-
-        for move_type in move_types:
-            if move_type["type"] == "castle":
-                moves.append(f"{move_type['side']}")
-            elif move_type["type"] == "direction":
-                multiplier = 1 if piece_color else -1
-                x = pos_in_xy[0] # x
-                y = pos_in_xy[1] # y
-                while True:
-                    x += move_type["x"] * multiplier
-                    y += move_type["y"] * multiplier
-                    if x < 0 or x > 7 or y < 0 or y > 7: break
-                    piece = self.get_piece(f"{letters[x]}{y + 1}")
-                    if piece:
-                        if piece["color"] != piece_color:
-                            moves.append(f"{letters[x]}{y + 1}")
-                        break
-                    else:
-                        moves.append(f"{letters[x]}{y + 1}")
-
-            elif move_type["type"] == "position":
-                x = pos_in_xy[0] + move_type["x"] * (1 if piece_color else -1) # new x
-                y = pos_in_xy[1] + move_type["y"] * (1 if piece_color else -1) # new y
-                if x < 0 or x > 7 or y < 0 or y > 7: continue # outside of board
-
-                if "en_passant" in move_type:
-                    moves.append(f"{letters[x]}{y + 1}-ep")
-                elif "promotion" in move_type:
-                    piece = self.get_piece(f"{letters[x]}{y + 1}")
-                    if move_type["capture"]:
-                        if piece != None:
-                            if piece["color"] != piece_color:
-                                moves.append(f"{letters[x]}{y + 1}-{move_type['promotion']}")
-                                # moves.append(f"{letters[x]}{y + 1}")
-                    elif move_type["move"]:
-                        if piece == None:
-                            # moves.append(f"{letters[x]}{y + 1}")
-                            moves.append(f"{letters[x]}{y + 1}-{move_type['promotion']}")
-                    else:
-                        print("wtf? x2")
-                else:
-                    piece = self.get_piece(f"{letters[x]}{y + 1}")
-                    if move_type["move"] and move_type["capture"]:
-                        if piece != None:
-                            if piece["color"] != piece_color:
-                                moves.append(f"{letters[x]}{y + 1}")
-                        else:
-                            moves.append(f"{letters[x]}{y + 1}")
-                    elif move_type["move"]:
-                        if piece == None:
-                            moves.append(f"{letters[x]}{y + 1}")
-                    elif move_type["capture"]:
-                        if piece != None:
-                            if piece["color"] != piece_color:
-                                moves.append(f"{letters[x]}{y + 1}")
-                    else:
-                        print("wtf?")
-        # print("moves:", moves)
-        return moves
-
-    def is_check(self, color: bool):
-        # Get King Position
-        king_pos = None
-        for piece in self.pieces:
-            if self.pieces[piece] == {"color": color, "type": "k"}:
-                king_pos = piece
-                break
-        if not king_pos: return False # No King Found
-        
-        # Check if any piece can capture the king
-        opponent_pieces = self.get_pieces(not color)
-        for piece in opponent_pieces:
-            if self.pieces[piece]["type"] == "k": continue
-            moves = self.list_moves(piece, not color, True)
-            for move in moves:
-                splitted = move.split("-")
-                if splitted[0] == king_pos: return True
-        return False
-    
-    def is_checkmate(self, color: bool):
-        if not self.is_check(color): return False # Not even checked
-
-        pieces = self.get_pieces(color)
-        # print(pieces)
-        # print(self.list_moves("e8", color))
-        # exit()
-        for piece in pieces:
-            moves = self.list_moves(piece, color, True)
-            for move in moves:
-                print("Possible Move to Escape:", f"{piece}-{move}")
-                simulated_board = self.move_simulate(f"{piece}-{move}", color)
-                if not simulated_board.is_check(color):
-                    return False
-        return True
-
-    def get_pieces(self, filter):
-        if filter == None:
+    ### PIECES
+    def get_pieces(self, color = None):
+        if color == None: # No filtering
             return self.pieces
         else:
             result = []
             for piece in self.pieces:
-                if self.pieces[piece]["color"] == filter:
+                if self.pieces[piece]["color"] == color:
                     result.append(piece)
             return result
+    def get_piece(self, pos):
+        return self.pieces.get(pos)
+
+    ### OUTPUT ###
+    def draw_board(self, color = True):
+        result = ""
+        numbers = REVERSED_NUMBERS if color else NUMBERS
+        for number in numbers:
+            for letter in LETTERS:
+                piece_pos = f"{letter}{number}"
+                piece = self.get_piece(piece_pos)
+                if piece:
+                    if piece["color"]:
+                        result += str(piece["type"]).upper()
+                    else:
+                        result += str(piece["type"]).lower()
+                else:
+                    result += " " # Empty Tile
+            result += "\n"
+        return result
+    
+    ### FEN ###
+    def import_fen(self, fen_code: str):
+        splitted = fen_code.replace(" ", "_").split("_")
+        
+        pieces = {}
+        current_x, current_y = 0, 8 # FEN starts from 8th rank
+        for row in splitted[0].split("/"):
+            current_x = 0
+            current_y -= 1
+            for letter in row:
+                if letter.isnumeric():
+                    current_x += int(letter)
+                else:
+                    pieces[f"{LETTERS[current_x]}{current_y + 1}"] = {"color": (not letter.islower()), "type": letter.lower()}
+                    current_x += 1
+            
+        if splitted[1] == "w": turn = True
+        elif splitted[1] == "b": turn = False
+        else: raise Exception("Invalid FEN Code")
+
+        whiteOO, whiteOOO, blackOO, blackOOO = False, False, False, False
+        if "K" in splitted[2]: whiteOO = True
+        if "Q" in splitted[2]: whiteOOO = True
+        if "k" in splitted[2]: blackOO = True
+        if "q" in splitted[2]: blackOOO = True
+
+        if splitted[3] == "-": en_passant_pos = None
+        else: en_passant_pos = splitted[3]
+
+        halfmove_clock = int(splitted[4])
+        fullmove_number = int(splitted[5])
+
+        return pieces, turn, whiteOO, whiteOOO, blackOO, blackOOO, en_passant_pos, halfmove_clock, fullmove_number
+    def export_fen(self):
+        print("Exporting FEN") # TODO
+
+    ### MOVEMENT ###
+    def move(self, move):
+        splitted_move = move.split("-")
+        pos = splitted_move[0]
+        piece = self.get_piece(pos)
+        # from 1 to end is the target
+        target = "-".join(splitted_move[1:])
+
+        if piece == None: raise Exception("Invalid Move - Piece Doesn't Exist")
+        if piece["color"] != self.turn: raise Exception("Invalid Move - Wrong Turn")
+
+        possible_moves = self.get_possible_moves(pos)
+        if target not in possible_moves: raise Exception("Invalid Move - Not Possible")
+
+        self.en_passant_pos = None
+        
+        splitted_target = target.split("-")
+        if len(splitted_target) > 1:
+            if splitted_target[1] == "enpassant": # en passant
+                target_en_passant_pos = f"{splitted_target[0][0]}{pos[1]}" # letter from target, number from pos to find the en passant target
+
+                self.pieces[splitted_target[0]] = piece.copy()
+                self.pieces.pop(pos)
+                self.pieces.pop(target_en_passant_pos)
+
+            elif splitted_target[1] == "2forward": # 2 forward
+                self.pieces[splitted_target[0]] = piece.copy()
+                self.pieces.pop(pos)
+
+                new_y = NUMBERS.index(splitted_target[0][1])
+                old_y = NUMBERS.index(pos[1])
+
+                y_avg = (new_y + old_y) / 2
+
+                self.en_passant_pos = f"{pos[0]}{NUMBERS[int(y_avg)]}"
+        else:
+            split_for_promotion = splitted_target[0].split("=")
+            if len(split_for_promotion) > 1: # Promotion
+                self.pieces[split_for_promotion[0]] = {"color": piece["color"], "type": split_for_promotion[1]}
+                self.pieces.pop(pos)
+            elif splitted_target[0] == "OO" or splitted_target[0] == "OOO": # Castle
+                if piece["color"]:
+                    if splitted_target[0] == "OO":
+                        self.pieces["g1"] = self.pieces["e1"].copy()
+                        self.pieces.pop("e1")
+                        self.pieces["f1"] = self.pieces["h1"].copy()
+                        self.pieces.pop("h1")
+                    else:
+                        self.pieces["c1"] = self.pieces["e1"].copy()
+                        self.pieces.pop("e1")
+                        self.pieces["d1"] = self.pieces["a1"].copy()
+                        self.pieces.pop("a1")
+                else:
+                    if splitted_target[0] == "OO":
+                        self.pieces["g8"] = self.pieces["e8"].copy()
+                        self.pieces.pop("e8")
+                        self.pieces["f8"] = self.pieces["h8"].copy()
+                        self.pieces.pop("h8")
+                    else:
+                        self.pieces["c8"] = self.pieces["e8"].copy()
+                        self.pieces.pop("e8")
+                        self.pieces["d8"] = self.pieces["a8"].copy()
+                        self.pieces.pop("a8")
+            else: # Normal Move
+                self.pieces[splitted_target[0]] = piece.copy() # Copy the piece to the new position
+                self.pieces.pop(pos) # Delete the old position
+        self.halfmove_clock += 1
+        if self.turn == False: self.fullmove_number += 1
+        self.turn = not self.turn
+    def move_simulate(self, move):
+        new_board = copy.deepcopy(self)
+        new_board.move(move)
+        return new_board
+
+    ### CALCULATE ###
+    def get_possible_moves(self, pos, only_captures = False, exclude_checks = False):
+        piece = self.get_piece(pos)
+        if piece == None: raise Exception("No Piece")
+        piece_color = piece["color"]
+        color_as_positive_or_negative = 1 if piece_color else -1
+
+        moves = []
+        if piece["type"] == "p": # PAWN
+            y_position = NUMBERS.index(pos[1])
+            if only_captures == False: # If non capture moves are allowed
+                # 1 FORWARD MOVE
+                one_forward = self.move_from_pos(pos, 0, 1 * color_as_positive_or_negative)
+                if one_forward != None:
+                    if self.get_piece(one_forward) == None:
+                        if y_position + 1 * color_as_positive_or_negative == RANKS[piece_color]["promotion"]:
+                            for promote_to in PROMOTE_TO:
+                                moves.append(f"{one_forward}={promote_to}")
+                        else:
+                            moves.append(one_forward)
+
+                        # 2 FORWARD MOVE
+                        if RANKS[piece_color]["2-move"] == y_position:
+                            two_forward = self.move_from_pos(pos, 0, 2 * color_as_positive_or_negative)
+                            if two_forward != None:
+                                if self.get_piece(two_forward) == None:
+                                    if y_position + 2 * color_as_positive_or_negative == RANKS[piece_color]["promotion"]:
+                                        for promote_to in PROMOTE_TO:
+                                            moves.append(f"{two_forward}={promote_to}-2forward")
+                                    else:
+                                        moves.append(f"{two_forward}-2forward")
+            # CAPTURE
+            # x negative
+            capture_x_negative = self.move_from_pos(pos, -1, color_as_positive_or_negative)
+            if capture_x_negative != None:
+                target_piece = self.get_piece(capture_x_negative)
+                if target_piece == None:
+                    if self.en_passant_pos == capture_x_negative:
+                        if y_position + 1 * color_as_positive_or_negative == RANKS[piece_color]["promotion"]:
+                            for promote_to in PROMOTE_TO:
+                                moves.append(f"{capture_x_negative}={promote_to}-enpassant")
+                        else:
+                            moves.append(f"{capture_x_negative}-enpassant")
+                elif target_piece["color"] != piece_color:
+                    if y_position + 1 * color_as_positive_or_negative == RANKS[piece_color]["promotion"]:
+                        for promote_to in PROMOTE_TO:
+                            moves.append(f"{capture_x_negative}={promote_to}")
+                    else:
+                        moves.append(capture_x_negative)
+            # x positive
+            capture_x_positive = self.move_from_pos(pos, 1, color_as_positive_or_negative)
+            if capture_x_positive != None:
+                target_piece = self.get_piece(capture_x_positive)
+                if target_piece == None:
+                    if self.en_passant_pos == capture_x_positive:
+                        if y_position + 1 * color_as_positive_or_negative == RANKS[piece_color]["promotion"]:
+                            for promote_to in PROMOTE_TO:
+                                moves.append(f"{capture_x_positive}={promote_to}-enpassant")
+                        else:
+                            moves.append(f"{capture_x_positive}-enpassant")
+                elif target_piece["color"] != piece_color:
+                    if y_position + 1 * color_as_positive_or_negative == RANKS[piece_color]["promotion"]:
+                        for promote_to in PROMOTE_TO:
+                            moves.append(f"{capture_x_positive}={promote_to}")
+                    else:
+                        moves.append(capture_x_positive)
+        elif piece["type"] == "k": # KING
+            for _move in KING_MOVES:
+                new_pos = self.move_from_pos(pos, _move[0], _move[1])
+                if new_pos != None:
+                    target_piece = self.get_piece(new_pos)
+                    if target_piece == None: moves.append(new_pos)
+                    elif target_piece["color"] != piece_color: moves.append(new_pos)
+            # Castling
+
+
+            if only_captures == False: # If non capture moves are allowed
+                ## Check validity
+                if piece_color:
+                    if self.get_piece("e1") != {"color": piece_color, "type": "k"}:
+                        self.whiteOO, self.whiteOOO = False, False
+                    if self.get_piece("h1") != {"color": piece_color, "type": "r"}:
+                        self.whiteOO = False
+                    if self.get_piece("a1") != {"color": piece_color, "type": "r"}:
+                        self.whiteOOO = False
+                else:
+                    if self.get_piece("e8") != {"color": piece_color, "type": "k"}:
+                        self.blackOO, self.blackOOO = False, False
+                    if self.get_piece("h8") != {"color": piece_color, "type": "r"}:
+                        self.blackOO = False
+                    if self.get_piece("a8") != {"color": piece_color, "type": "r"}:
+                        self.blackOOO = False
+
+                if piece_color:
+                    if self.whiteOO and self.is_in_check(piece_color) == False: # allowed and not in check
+                        if self.get_piece("f1") == None and self.get_piece("g1") == None:
+                            if self.is_in_danger("f1", piece_color) == False and self.is_in_danger("g1", piece_color) == False:
+                                moves.append(f"OO")
+                    if self.whiteOOO and self.is_in_check(piece_color) == False: # allowed and not in check
+                        if self.get_piece("d1") == None and self.get_piece("c1") == None and self.get_piece("b1") == None:
+                            if self.is_in_danger("d1", piece_color) == False and self.is_in_danger("c1", piece_color) == False:
+                                moves.append(f"OOO")
+                else:
+                    if self.blackOO and self.is_in_check(piece_color) == False: # allowed and not in check
+                        if self.get_piece("f8") == None and self.get_piece("g8") == None:
+                            if self.is_in_danger("f8", piece_color) == False and self.is_in_danger("g8", piece_color) == False:
+                                moves.append(f"OO")
+                    if self.blackOOO and self.is_in_check(piece_color) == False: # allowed and not in check
+                        if self.get_piece("d8") == None and self.get_piece("c8") == None and self.get_piece("b8") == None:
+                            if self.is_in_danger("d8", piece_color) == False and self.is_in_danger("c8", piece_color) == False:
+                                moves.append(f"OOO")
+        elif piece["type"] == "n": # KNIGHT
+            for _move in HORSEY_MOVES:
+                new_pos = self.move_from_pos(pos, _move[0], _move[1])
+                if new_pos != None: # Not Out of Bounds
+                    target_piece = self.get_piece(new_pos)
+                    # If Empty or Enemy Piece
+                    if target_piece == None: moves.append(new_pos)
+                    elif target_piece["color"] != piece_color: moves.append(new_pos)
+        else: # Directional Pieces - Rook, Bishop, Queen
+            if piece["type"] != "r": # DIAGONAL
+                moves.extend(self.calculate_directional_move(pos, 1, 1))
+                moves.extend(self.calculate_directional_move(pos, 1, -1))
+                moves.extend(self.calculate_directional_move(pos, -1, 1))
+                moves.extend(self.calculate_directional_move(pos, -1, -1))
+            if piece["type"] != "b": # STRAIGHT
+                moves.extend(self.calculate_directional_move(pos, 0, 1))
+                moves.extend(self.calculate_directional_move(pos, 0, -1))
+                moves.extend(self.calculate_directional_move(pos, 1, 0))
+                moves.extend(self.calculate_directional_move(pos, -1, 0))
+        
+        if exclude_checks:
+            result = []
+            for move in moves:
+                simulated_board = self.move_simulate(f"{pos}-{move}")
+                if simulated_board.is_in_check(piece_color) == False:
+                    result.append(move)
+            return result
+        
+        return moves
+    def get_all_possible_moves(self, color, only_captures = False, add_where_from = False, exclude_checks = False):
+        pieces = self.get_pieces(color)
+        moves = []
+        for piece in pieces:
+            if add_where_from:
+                piece_moves = self.get_possible_moves(piece, only_captures=only_captures, exclude_checks=exclude_checks)
+                for move in piece_moves:
+                    moves.append(f"{piece}-{move}")
+            else:
+                moves.extend(self.get_possible_moves(piece, only_captures=only_captures, exclude_checks=exclude_checks))
+        return moves
+
+    def calculate_directional_move(self, pos, x, y):
+        piece = self.get_piece(pos)
+        if piece == None: raise Exception("No Piece")
+
+        moves = []
+        change = 1
+        while True:
+            new_pos = self.move_from_pos(pos, change*x, change*y)
+            if new_pos == None: break # Out of Bounds
+            target_piece = self.get_piece(new_pos)
+            if target_piece == None: # Empty Tile
+                moves.append(new_pos)
+            else:
+                if target_piece["color"] != piece["color"]: # Capture
+                    moves.append(new_pos)
+                break # Break either way (capture or blocked)
+            change += 1
+        return moves
+    
+    def move_from_pos(self, pos, x, y):
+        pos_x = LETTERS.index(pos[0])
+        pos_y = NUMBERS.index(pos[1])
+
+        new_x = pos_x + x
+        new_y = pos_y + y
+
+        if new_x < 0 or new_x > 7 or new_y < 0 or new_y > 7: return None # Out of Bounds
+
+        return f"{LETTERS[new_x]}{NUMBERS[new_y]}"
+
+    ### CONTROLS ###
+    def is_in_danger(self, pos, color):
+        moves = self.get_all_possible_moves(color=not color, only_captures=True)
+        for move in moves:
+            if str(move).startswith(pos):
+                return True
+        return False
+    def is_in_check(self, color):
+        pieces = self.get_pieces(color)
+        for piece in pieces:
+            the_piece = self.get_piece(piece)
+            if the_piece["type"] == "k":
+                # CHECK IF KING IS IN DANGER AND RETURN
+                return self.is_in_danger(piece, color)
+        return False
+    def is_in_checkmate(self, color):
+        if self.is_in_check(color) == False: return False
+        # TRY ALL POSSIBLE MOVES TO GET OUT OF CHECK
+        possible_moves = self.get_all_possible_moves(color, only_captures=False, add_where_from=True)
+        for move in possible_moves:
+            simulated_board = self.move_simulate(move)
+            if simulated_board.is_in_check(color) == False:
+                return False
+        return True
+
+    ### NOTATION ###
+    def convert_from_algebraic(self, move_in_algebraic, color):
+        # remove + and # 
+        move_in_algebraic = move_in_algebraic.replace("+", "").replace("#", "")
+
+        if move_in_algebraic == "O-O": # Castle
+            if color: return "e1-OO"
+            else: return "e8-OO"
+        elif move_in_algebraic == "O-O-O":
+            if color: return "e1-OOO"
+            else: return "e8-OOO"
+
+        capturing = False
+        piece = move_in_algebraic[0]
+        notation_starts_from = 1
+        if piece.isupper(): piece = piece.lower()
+        else: 
+            piece = "p"
+            notation_starts_from = 0
+        
+        # Last 2 is the target
+        promotion_split = move_in_algebraic.split("=")
+        if len(promotion_split) > 1:
+            promote_to = str(promotion_split[1]).lower()
+        else:
+            promote_to = None
+        without_promotion = promotion_split[0]
+        target_pos = without_promotion[-2:]
+
+        rest_of_the_notation = without_promotion[notation_starts_from:-2]
+
+        if "x" in rest_of_the_notation:
+            capturing = True
+        ambigious_solver = rest_of_the_notation.replace("x", "")
+
+        # all_possible_moves = self.get_all_possible_moves(color, only_captures=False, add_where_from=True, exclude_checks=False)
+        all_pieces = self.get_pieces(color)
+        filtered_pieces = []
+        for _piece in all_pieces:
+            if self.get_piece(_piece)["type"] == piece:
+                if ambigious_solver != None:
+                    # print(f"{_piece}-{ambigious_solver}: {ambigious_solver in _piece}")
+                    if ambigious_solver in _piece:
+                        filtered_pieces.append(_piece)
+                else:
+                    filtered_pieces.append(_piece)
+        # print(filtered_pieces)
+        
+        for _piece in filtered_pieces:
+            possible_moves = self.get_possible_moves(_piece, only_captures=capturing)
+            for move in possible_moves:
+                if move[0:2] == target_pos:
+                    return f"{_piece}-{move}"
+
+        return f"Piece: {piece} - Target: {target_pos}- Promotion: {promote_to} - Ambigious_Solver: {ambigious_solver} - Couldn't solve: {move_in_algebraic}"    
+    def convert_to_algebraic(self, move):
+        # TODO
+        pass
+
+    ### COMPLEX CALCULATIONS ### TODO
+    def get_attackers(self, pos, attacker_color, exclude_checks = False):
+        piece = self.get_piece(pos)
+
+        if piece == None: # Empty Tile
+            attacker_pieces = self.get_pieces(attacker_color)
+            attackers = []
+            for attacker_piece in attacker_pieces:
+                attacker_moves = self.get_possible_moves(attacker_piece, only_captures=True, exclude_checks=exclude_checks)
+                for move in attacker_moves:
+                    if move[0:2] == pos:
+                        attackers.append(attacker_piece)
+            
+
+        
+        if piece["color"] != attacker_color: # its own piece
+            return []
+        
+
+
+
+    def get_defenders(self, pos, color):
+        pass
